@@ -4,10 +4,12 @@
  */
 package mobemu.node;
 
-import java.util.*;
+import mobemu.analytics.GraphMatrix;
 import mobemu.communitydetection.KClique;
 import mobemu.trace.Contact;
 import mobemu.trace.Trace;
+
+import java.util.*;
 
 /**
  * Class for a mobile node in an opportunistic network. This is an abstract
@@ -241,6 +243,72 @@ public abstract class Node {
         }
 
         return messages;
+    }
+
+
+    /**
+     * Runs an opportunistic algorithm.
+     *
+     * @param nodesLength number of Nodes
+     * @param trace mobility trace
+     * @return void
+     */
+
+    public static void runAnalytics(int nodesLength, Trace trace){
+
+        int contactCount = trace.getContactsCount();
+        long startTime = trace.getStartTime();
+        long endTime = trace.getEndTime();
+        long sampleTime = trace.getSampleTime();
+
+        /*initialize Grpah Representation with aging factor alpha. the shorter it is, the longest */
+        int alpha = 15;
+        int tally = 1000;
+        GraphMatrix graphMatrix = new GraphMatrix(alpha,tally,nodesLength);
+
+        for (long tick = startTime; tick < endTime; tick += sampleTime) {
+            int count = 0;
+
+            for (int i = 0; i < contactCount; i++) {
+                Contact contact = trace.getContactAt(i);
+
+                if (contact.getStart() <= tick && contact.getEnd() >= tick) {
+
+                    // there is a contact.
+                    count++;
+
+                    int observed_id = contact.getObserver();
+                    int observer_id = contact.getObserved();
+
+                    graphMatrix.update(observed_id,observer_id);
+                    // run
+
+//                    graphMatrix.track(observed_id,observer_id,6, 3,tick);
+
+                }
+            }
+            // remove unused contacts.
+            for (int i = count - 1; i >= 0; i--) {
+                if (trace.getContactAt(i).getEnd() == tick) {
+                    trace.removeContactAt(i);
+                }
+            }
+
+            contactCount = trace.getContactsCount();
+
+            graphMatrix.ageFormula();
+
+//            graphMatrix.trackAge(6,3,tick);
+
+            //analyze graph
+
+
+
+            if (graphMatrix.getCount()>4){
+//                graphMatrix.printGraphMatrix();
+
+            }
+        }
     }
 
     /**

@@ -22,6 +22,7 @@ public class MobEmu {
 /*test commit wke*/
     public static void main(String[] args) {
         Parser parser = new UPB(UPB.UpbTrace.UPB2011);
+        boolean compute = true;
 
         // print some trace statistics
         double duration = (double) (parser.getTraceData().getEndTime() - parser.getTraceData().getStartTime()) / (Parser.MILLIS_PER_MINUTE * 60);
@@ -40,14 +41,21 @@ public class MobEmu {
         }
 
         // run the trace
-        List<Message> messages = Node.runTrace(nodes, parser.getTraceData(), false, dissemination, seed);
-        System.out.println("Messages: " + messages.size());
 
-        // print opportunistic algorithm statistics
-        System.out.println(nodes[0].getName());
-        System.out.println("" + Stats.computeHitRate(messages, nodes, dissemination));
-        System.out.println("" + Stats.computeDeliveryCost(messages, nodes, dissemination));
-        System.out.println("" + Stats.computeDeliveryLatency(messages, nodes, dissemination));
-        System.out.println("" + Stats.computeHopCount(messages, nodes, dissemination));
+
+        if (compute) {
+            Node.runAnalytics(nodes.length, parser.getTraceData());
+            System.out.println(nodes[0].getName());
+        }
+        else {
+            // print opportunistic algorithm statistics
+            List<Message> messages = Node.runTrace(nodes, parser.getTraceData(), false, dissemination, seed);
+            System.out.println(nodes[0].getName());
+            System.out.println("Messages: " + messages.size());
+            System.out.println("" + Stats.computeHitRate(messages, nodes, dissemination));
+            System.out.println("" + Stats.computeDeliveryCost(messages, nodes, dissemination));
+            System.out.println("" + Stats.computeDeliveryLatency(messages, nodes, dissemination));
+            System.out.println("" + Stats.computeHopCount(messages, nodes, dissemination));
+        }
     }
 }
