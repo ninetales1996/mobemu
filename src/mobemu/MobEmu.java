@@ -8,7 +8,7 @@ import mobemu.algorithms.Epidemic;
 import mobemu.node.Message;
 import mobemu.node.Node;
 import mobemu.node.Stats;
-import mobemu.parsers.UPB;
+import mobemu.parsers.*;
 import mobemu.trace.Parser;
 
 import java.util.List;
@@ -22,6 +22,19 @@ public class MobEmu {
 /*test commit wke*/
     public static void main(String[] args) {
         Parser parser = new UPB(UPB.UpbTrace.UPB2011);
+//        Parser parser = new UPB(UPB.UpbTrace.UPB2012);
+//        Parser parser = new GeoLife();
+//        Parser parser= new Haggle(Haggle.HaggleTrace.INTEL);
+//        Parser parser= new Haggle(Haggle.HaggleTrace.CAMBRIDGE);
+//        Parser parser= new Haggle(Haggle.HaggleTrace.INFOCOM);
+//        Parser parser= new Haggle(Haggle.HaggleTrace.INFOCOM2006);
+//        Parser parser= new Haggle(Haggle.HaggleTrace.CONTENT);
+//        Parser parser= new NCCU();
+//        Parser parser= new NUS();
+//        Parser parser= new Sigcomm();
+//        Parser parser= new SocialBlueConn();
+//        Parser parser= new StAndrews();
+
         boolean compute = true;
 
         // print some trace statistics

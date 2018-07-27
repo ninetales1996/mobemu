@@ -4,6 +4,7 @@
  */
 package mobemu.node;
 
+import mobemu.analytics.GraphCommunityList;
 import mobemu.analytics.GraphMatrix;
 import mobemu.communitydetection.KClique;
 import mobemu.trace.Contact;
@@ -260,55 +261,85 @@ public abstract class Node {
         long startTime = trace.getStartTime();
         long endTime = trace.getEndTime();
         long sampleTime = trace.getSampleTime();
+        boolean sparse = true;
+        int processNumberCounts = 0;
+        boolean print = false;
+
+        int count_time_elapsed = 0 ;
+        double total_edges = 0;
+        int treshold = (nodesLength*(nodesLength+1)*15)/(2*100);
+
+        System.out.println("treshold for " + trace.getName() + " is " + treshold);
+
+//        GraphData communityGraphData = new GraphCommunityList();
+//        GraphData nodeGraphData = new GraphNodeList();
+
+        GraphCommunityList communityGraphData = new GraphCommunityList();
 
         /*initialize Grpah Representation with aging factor alpha. the shorter it is, the longest */
         int alpha = 15;
         int tally = 1000;
         GraphMatrix graphMatrix = new GraphMatrix(alpha,tally,nodesLength);
 
-        for (long tick = startTime; tick < endTime; tick += sampleTime) {
-            int count = 0;
 
+        System.out.println("trace is " + trace.getName() + " trace.getContactsCount() + " + trace.getContactsCount() + " sample time is " + sampleTime);
+        graphMatrix.printGraphMatrix();
+
+        System.out.println("start time is " + startTime + " end time is " + endTime);
+
+        for (long tick = startTime; tick < endTime; tick += sampleTime) {
+            int countContacts = 0;
+            long time_remaining = endTime - tick;
+            count_time_elapsed++;
+            if ((time_remaining%1000000) == 0){
+                System.out.println(" time remaining " + (endTime - tick));
+            }
             for (int i = 0; i < contactCount; i++) {
                 Contact contact = trace.getContactAt(i);
 
                 if (contact.getStart() <= tick && contact.getEnd() >= tick) {
-
+                    print=true;
                     // there is a contact.
-                    count++;
+                    countContacts++;
 
                     int observed_id = contact.getObserver();
                     int observer_id = contact.getObserved();
 
                     graphMatrix.update(observed_id,observer_id);
-                    // run
-
-//                    graphMatrix.track(observed_id,observer_id,6, 3,tick);
-
                 }
             }
             // remove unused contacts.
-            for (int i = count - 1; i >= 0; i--) {
+            for (int i = countContacts - 1; i >= 0; i--) {
                 if (trace.getContactAt(i).getEnd() == tick) {
                     trace.removeContactAt(i);
                 }
             }
 
             contactCount = trace.getContactsCount();
-
-            graphMatrix.ageFormula();
-
-//            graphMatrix.trackAge(6,3,tick);
-
-            //analyze graph
+            graphMatrix.ageFormula(sparse);
 
 
+//            if (graphMatrix.getAgedEdgeCount()>50){
+            if ((graphMatrix.getAgedEdgeCount()>treshold)){
+                processNumberCounts++;
+                total_edges = total_edges + graphMatrix.getAgedEdgeCount();
+//                nodeGraphData.process(graphMatrix,tick);
+                if ((time_remaining%500000)==0)
+                    communityGraphData.process(graphMatrix,tick);
+//                System.out.println("time is " + communityGraphData.time_counter);
 
-            if (graphMatrix.getCount()>4){
+
+
 //                graphMatrix.printGraphMatrix();
 
             }
         }
+
+        double average_no_edges = total_edges/processNumberCounts;
+
+        communityGraphData.print_state();
+        System.out.println("average number of edges " + average_no_edges + " number of counts " + processNumberCounts);
+
     }
 
     /**
