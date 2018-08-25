@@ -6,6 +6,7 @@ import org.gephi.project.api.Workspace;
 import org.gephi.statistics.plugin.*;
 import org.openide.util.Lookup;
 
+import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
@@ -13,9 +14,20 @@ import java.util.HashMap;
 public class GraphNodeList extends GraphData{
     HashMap<Integer,GraphNode> nodeList;
     private GraphNodeList History;
+    double averageClusteringCoefficient;
     int count = 0;
+    private String traceName;
+    boolean clusteringCoefficientRaised;
+    public static int no_events = 0;
+    public static int no_events_label = 0;
+    public static int no_global_events =0;
+    public static  int no_global_clust =0;
 
-    public GraphNodeList() {
+    public static int MAX_NODES = 99;
+    public boolean init=true;
+
+    public GraphNodeList( String traceName) {
+        this.traceName = traceName;
         nodeList = new HashMap<>();
     }
 
@@ -52,6 +64,7 @@ public class GraphNodeList extends GraphData{
         pageRank.execute(graphModel);
         weightedDegree.execute(graphModel);
 
+        this.averageClusteringCoefficient = clusteringCoefficient.getAverageClusteringCoefficient();
         Column clusteringColumn = graphModel.getNodeTable().getColumn(ClusteringCoefficient.CLUSTERING_COEFF);
         Column betweennessColumn = graphModel.getNodeTable().getColumn(GraphDistance.BETWEENNESS);
         Column closenessColumn = graphModel.getNodeTable().getColumn(GraphDistance.CLOSENESS);
@@ -101,7 +114,16 @@ public class GraphNodeList extends GraphData{
     void updateLabel(long tick) {
         if (History == null)
             return;
+
+        no_global_events++;
+        clusteringCoefficientRaised=false;
+        if (this.averageClusteringCoefficient>History.averageClusteringCoefficient){
+            no_global_clust++;
+            clusteringCoefficientRaised=true;
+        }
+
         for (Integer key : nodeList.keySet()) {
+            no_events++;
             GraphNode graphNode = nodeList.get(key);
 
 //            System.out.println("degree for node " + key +" at "+tick+" is " + graphNode.getDegree());
@@ -109,6 +131,7 @@ public class GraphNodeList extends GraphData{
 
             if (graphNode.getClusteringCoefficient() > History.nodeList.get(key).getClusteringCoefficient()) {
 //                System.out.println("label set for key" + key);
+                no_events_label++;
                 graphNode.setLabel(true);
             }
         }
@@ -117,11 +140,12 @@ public class GraphNodeList extends GraphData{
     @Override
     void updateHistory() {
         this.History = null;
-        this.History = new GraphNodeList(nodeList);
+        this.History = new GraphNodeList(nodeList,averageClusteringCoefficient);
     }
 
-    public GraphNodeList(HashMap<Integer,GraphNode> nodeList) {
+    public GraphNodeList(HashMap<Integer,GraphNode> nodeList,double averageClusteringCoefficient) {
         this.nodeList = (HashMap) nodeList.clone();
+        this.averageClusteringCoefficient = averageClusteringCoefficient;
     }
 
     @Override
@@ -131,18 +155,60 @@ public class GraphNodeList extends GraphData{
 
     @Override
     void feedToMLEngine(long tick){
-        FileWriter writer = null;
+        BufferedWriter writer = null;
+        Integer temp=0;
+//        try {
+//            writer = new BufferedWriter( new FileWriter("Node_file_" + traceName  +".txt", true));
+//            writer.write("tick starting " + tick);
+//            for (Integer key : nodeList.keySet()) {
+//                GraphNode node = nodeList.get(key);
+//                writer.write(" node " + key + " attribute " + node.toString());
+//            }
+//            writer.write("no events " +no_events);
+//            writer.write("no events label " +no_events_label);
+//            writer.write("\n");
+//            writer.close();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
         try {
-            writer = new FileWriter("Node_file.txt", true);
+            writer = new BufferedWriter( new FileWriter("Node_file_all" + ".csv", true));
+
+            if (init) {
+                for (int i = 0; i < MAX_NODES; i++) {
+                    writer.write(GraphNode.columnStrings(i));
+                }
+                writer.write(";world_label");
+
+                writer.write("\n");
+                init=false;
+            }
+
             for (Integer key : nodeList.keySet()) {
                 GraphNode node = nodeList.get(key);
-                writer.write(tick + " node " + key + " attributs " + node.toString());
+                writer.write(node.toMLString());
+                temp++;
             }
+
+            for (; temp< MAX_NODES; temp++){
+                writer.write(GraphNode.toMLPadding());
+            }
+            if (clusteringCoefficientRaised)
+                 writer.write(";"+1);
+            else
+                writer.write(";"+0);
+
             writer.write("\n");
             writer.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
 
+    public void printEvents(){
+        System.out.println(" system global no events " + no_global_events);
+        System.out.println(" system labeled no events " + no_global_clust);
+        System.out.println(" node no events " +no_events);
+        System.out.println(" node no events label " +no_events_label);
     }
 }

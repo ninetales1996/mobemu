@@ -18,8 +18,10 @@ public class MobEmuRand {
            /* compute number of groups per wiring probability */
             int count = 100;
             double group_number = 0 ;
-            double wiring = 0.4;
-            int noNodes = 182;
+            double wiring = 0.5;
+            int noNodes = 10;
+            double total_clustering = 0;
+            double no_clustering = 0;
             HashMap<Double,Double> wireGroups = new HashMap<>();
 //            double wiring = 0.05;
 
@@ -37,7 +39,7 @@ public class MobEmuRand {
                     Modularity modularity = new Modularity();
                     modularity.execute(graphModel);
                     modularity.setUseWeight(true);
-
+                    ClusteringCoefficient clusteringCoefficient = new ClusteringCoefficient();
 
                     Column modColumn = graphModel.getNodeTable().getColumn(Modularity.MODULARITY_CLASS);
 
@@ -70,11 +72,18 @@ public class MobEmuRand {
     //                    }
     //                    System.out.println(" ");
                     }
+                    clusteringCoefficient.execute(graphModel);
+                    if (clusteringCoefficient.getAverageClusteringCoefficient()>0) {
+                        total_clustering = total_clustering + clusteringCoefficient.getAverageClusteringCoefficient();
+                        no_clustering = no_clustering + 1;
+                    }
                     pc.closeCurrentProject();
                 }
+
                 double result = group_number/count;
                 wireGroups.put(wiring,result);
                 System.out.println(" iterated " + count + " times " + " with no of nodes " + noNodes + " with wiring " + wiring + " results in noOfGroups " + result );
+                System.out.println(" avg clustering coef " + (total_clustering/no_clustering) );
 
     }
 }

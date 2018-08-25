@@ -14,6 +14,9 @@ import static mobemu.analytics.GraphData.processMatrix;
 
 public class GraphCommunity implements GraphPopulateData {
 
+    public static final int COMMUNITY_EQUAL = 0;
+    public static final int COMMUNITY_INCREASE = 1;
+    public static final int COMMUNITY_DECREASE = 2;
 
     int size;
     double averageClusteringCoefficient;
@@ -24,7 +27,7 @@ public class GraphCommunity implements GraphPopulateData {
     double directed;
     double averageWeightedDegree;
 
-    boolean Label;/*is community extending*/
+    int Label;/*is community extending*/
 
     HashMap<Integer, Integer> borderNodes;
     int borderSize;
@@ -34,7 +37,7 @@ public class GraphCommunity implements GraphPopulateData {
     public GraphCommunity() {
         size=0;
         borderNodes = new HashMap<>();
-        Label=false;
+        Label=COMMUNITY_EQUAL;
     }
 
 
@@ -42,26 +45,66 @@ public class GraphCommunity implements GraphPopulateData {
     public String toString() {
         DecimalFormat df = new DecimalFormat("#.###");
 
-        return  " Label= " + Label +
-                ", size=" + size +
-                ", clusteringCoef=" + df.format(averageClusteringCoefficient) +
-                ", pathLength=" + df.format(pathLength) +
-                ", diameter=" + df.format(diameter) +
-                ", compCount=" + connectedComponentsCount +
-                ", density=" + df.format(density) +
-                ", directed=" + df.format(directed) +
-                ", degree=" + df.format(averageWeightedDegree) +
-                ", borderS=" + df.format(borderSize) +
-                ", borderW=" + df.format(borderWeight)
+        return  " Label= " + labelToString(Label) +
+                ", size= " + size +
+                ", clusteringCoef= " + df.format(averageClusteringCoefficient) +
+                ", pathLength= " + df.format(pathLength) +
+                ", diameter= " + df.format(diameter) +
+                ", compCount= " + connectedComponentsCount +
+                ", density= " + df.format(density) +
+                ", directed= " + df.format(directed) +
+                ", degree= " + df.format(averageWeightedDegree) +
+                ", borderS= " + df.format(borderSize) +
+                ", borderW= " + df.format(borderWeight)
                 + "\n";
     }
 
-    public boolean isLabel() {
+    public static String toMLPadding() {
+        DecimalFormat df = new DecimalFormat("#.###");
+        return false + ";" + 0 + ";" +df.format(0) + ";" +
+                df.format(0) + ";" + df.format(0)+ ";" +
+                0 + ";" + df.format(0) + ";" +
+                0 + ";" + df.format(0) + ";" + df.format(0) +
+                ";" + df.format(0);
+    }
+
+    public String toMLString() {
+        DecimalFormat df = new DecimalFormat("#.###");
+        return false + ";" + size + ";" +df.format(averageClusteringCoefficient) + ";" +
+                df.format(pathLength) + ";" + df.format(diameter)+ ";" +
+                connectedComponentsCount + ";" + df.format(density) + ";" +
+                directed + ";" + df.format(averageWeightedDegree) + ";" + df.format(borderSize) +
+                ";" + df.format(borderWeight);
+
+    }
+
+    public static String columnStrings(Integer key) {
+        return "Label"+key.toString()+";size"+key.toString()+";clusteringCoef"+key.toString()+";pathLength"+key.toString()+
+                ";diameter"+key.toString() + ";compCount"+key.toString()+";density"+key.toString()
+                +";directed"+key.toString()+";degree"+key.toString()+";borderS"+key.toString()+";borderW"+key.toString();
+    }
+
+    public int isLabel() {
         return Label;
     }
 
-    public void setLabel(boolean label) {
-        Label = label;
+    public void setLabelIncrease() {
+        Label = COMMUNITY_INCREASE;
+    }
+    public void setLabelDecrease() { Label = COMMUNITY_DECREASE; }
+    public void setLabelEqual() { Label = COMMUNITY_EQUAL; }
+
+    public static String labelToString(int Label){
+        switch (Label) {
+            case COMMUNITY_DECREASE:
+                return "community decrease";
+            case COMMUNITY_INCREASE:
+                return "community increase";
+            case COMMUNITY_EQUAL:
+                return "community equal";
+            default:
+                return "error";
+        }
     }
 
 
@@ -187,6 +230,8 @@ public class GraphCommunity implements GraphPopulateData {
         setDensity(density.getDensity());
         setAverageWeightedDegree(weightedDegree.getAverageDegree());
 
+
+
         pc.closeCurrentProject();
     }
 
@@ -202,6 +247,4 @@ public class GraphCommunity implements GraphPopulateData {
 
         this.borderNodes = borderNodes;
     }
-
-
 }

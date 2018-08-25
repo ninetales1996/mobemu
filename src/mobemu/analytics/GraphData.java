@@ -23,12 +23,15 @@ public abstract class GraphData implements GraphPopulateData {
 
     public void process(GraphMatrix graphMatrix, long tick)  {
         this.populateData(graphMatrix);
-//        this.updateLabel(tick);
-//        this.updateHistory();
-//        this.feedToMLEngine(tick);
+        this.updateLabel(tick);
+        this.updateHistory();
+        this.feedToMLEngine(tick);
         this.clearHistory();
     }
 
+    public void restore(){
+        this.clearHistory();;
+    }
 
     public static void processMatrix(GraphMatrix graphMatrix, GraphModel graphModel){
 

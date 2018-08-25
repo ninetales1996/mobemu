@@ -6,6 +6,7 @@ package mobemu.node;
 
 import mobemu.analytics.GraphCommunityList;
 import mobemu.analytics.GraphMatrix;
+import mobemu.analytics.GraphNodeList;
 import mobemu.communitydetection.KClique;
 import mobemu.trace.Contact;
 import mobemu.trace.Trace;
@@ -261,42 +262,52 @@ public abstract class Node {
         long startTime = trace.getStartTime();
         long endTime = trace.getEndTime();
         long sampleTime = trace.getSampleTime();
-        boolean sparse = true;
+        boolean sparse = GraphMatrix.getSparse(trace.getName()) ; /*if false -> min init is zero*/
+        boolean very_sparse = GraphMatrix.getVerySparse(trace.getName()) ; /*if false -> min age is zero*/
         int processNumberCounts = 0;
         boolean print = false;
+        int modulo= 1000000;
 
         int count_time_elapsed = 0 ;
         double total_edges = 0;
-        int treshold = (nodesLength*(nodesLength+1)*15)/(2*100);
+        int percent_treshold = GraphMatrix.getTreshold(trace.getName());
+        int treshold = (nodesLength*(nodesLength+1)*percent_treshold)/(2*100);
 
         System.out.println("treshold for " + trace.getName() + " is " + treshold);
 
 //        GraphData communityGraphData = new GraphCommunityList();
-//        GraphData nodeGraphData = new GraphNodeList();
+        GraphNodeList nodeGraphData = new GraphNodeList(trace.getName());
 
-        GraphCommunityList communityGraphData = new GraphCommunityList();
+        GraphCommunityList communityGraphData = new GraphCommunityList(trace.getName());
 
         /*initialize Grpah Representation with aging factor alpha. the shorter it is, the longest */
-        int alpha = 15;
-        int tally = 1000;
-        GraphMatrix graphMatrix = new GraphMatrix(alpha,tally,nodesLength);
-
+        int alpha = GraphMatrix.getAlpha(trace.getName());
+        int tally = GraphMatrix.getTally(trace.getName());
+        int minimumSparseCoef = GraphMatrix.getMinimumSparseCoef(trace.getName());
+        System.out.println("for " + trace.getName() + " minimum is " + minimumSparseCoef + " tally is " + tally + " alpha is " + alpha);
+        System.out.println("trshold is "+ percent_treshold + " sparse is " +  sparse + " very sparse is " + very_sparse);
+        GraphMatrix graphMatrix = new GraphMatrix(alpha,tally,nodesLength,minimumSparseCoef);
 
         System.out.println("trace is " + trace.getName() + " trace.getContactsCount() + " + trace.getContactsCount() + " sample time is " + sampleTime);
         graphMatrix.printGraphMatrix();
 
         System.out.println("start time is " + startTime + " end time is " + endTime);
-
+/*1106722177000L*/
         for (long tick = startTime; tick < endTime; tick += sampleTime) {
             int countContacts = 0;
             long time_remaining = endTime - tick;
             count_time_elapsed++;
-            if ((time_remaining%1000000) == 0){
-                System.out.println(" time remaining " + (endTime - tick));
+//            if ((time_remaining%1000000) == 0){
+//                System.out.println(" time remaining " + (endTime - tick));
+//            }
+//            graphMatrix.printGraphMatrix();
+            if ((time_remaining%modulo)==0) {
+                System.out.println(" time passing " + time_remaining );
+
             }
+
             for (int i = 0; i < contactCount; i++) {
                 Contact contact = trace.getContactAt(i);
-
                 if (contact.getStart() <= tick && contact.getEnd() >= tick) {
                     print=true;
                     // there is a contact.
@@ -305,7 +316,7 @@ public abstract class Node {
                     int observed_id = contact.getObserver();
                     int observer_id = contact.getObserved();
 
-                    graphMatrix.update(observed_id,observer_id);
+                    graphMatrix.update(observed_id,observer_id,sparse);
                 }
             }
             // remove unused contacts.
@@ -316,29 +327,66 @@ public abstract class Node {
             }
 
             contactCount = trace.getContactsCount();
-            graphMatrix.ageFormula(sparse);
+            graphMatrix.ageFormula(very_sparse);
 
-
+//            graphMatrix.printGraphMatrix();
 //            if (graphMatrix.getAgedEdgeCount()>50){
+
             if ((graphMatrix.getAgedEdgeCount()>treshold)){
+
+
+//                Timer timer = new Timer ();
+//
+//                class RemindTask extends TimerTask {
+//                    public void run() {
+//                        System.out.println("Time's up!");
+//                        System.out.println("ERROR OCCURED!!!");
+//                        nodeGraphData.restore();
+//                        communityGraphData.restore();
+//                        timer.cancel(); //Terminate the timer thread
+//                    }
+//                }
+//
+//                timer.schedule(new RemindTask(), 5*1000);
+
                 processNumberCounts++;
                 total_edges = total_edges + graphMatrix.getAgedEdgeCount();
-//                nodeGraphData.process(graphMatrix,tick);
-                if ((time_remaining%500000)==0)
-                    communityGraphData.process(graphMatrix,tick);
-//                System.out.println("time is " + communityGraphData.time_counter);
+                /*timer*/
+
+                nodeGraphData.process(graphMatrix,tick);
+                communityGraphData.process(graphMatrix, tick);
+//
+//                timer.cancel();
 
 
-
-//                graphMatrix.printGraphMatrix();
-
+//                if (timer) {
+                //  System.out.println("fail tick " +tick);
+//                    nodeGraphData.restore();
+//                    communityGraphData.restore();
+//                }
+//                if ((time_remaining%modulo)==0) {
+//
+//                    communityGraphData.process(graphMatrix, tick);
+                System.out.println("processed !!! time is " + communityGraphData.time_counter + " time remaining " + time_remaining + " at tick " + tick);
+//                }
             }
         }
 
         double average_no_edges = total_edges/processNumberCounts;
+        double avg_clustering = communityGraphData.total_clustering/communityGraphData.no_clustering;
+
+        System.out.println("process treshold is " + treshold + " fast init is " + sparse + " no age " + very_sparse + " with min " + graphMatrix.minimumSparseCoef +
+                " tally is " + tally + " alpha is " + alpha);
+        System.out.println(" average number of edges " + average_no_edges + " number of counts " + processNumberCounts);
+        System.out.println("avg clustering " + avg_clustering);
 
         communityGraphData.print_state();
-        System.out.println("average number of edges " + average_no_edges + " number of counts " + processNumberCounts);
+
+        communityGraphData.printEvents();;
+        nodeGraphData.printEvents();
+
+
+        System.out.println();
 
     }
 

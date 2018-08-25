@@ -15,15 +15,15 @@ public class GraphMatrix {
 
     private int alpha;
     private int tally;
-    private int minimumSparseCoef;
+    public int minimumSparseCoef;
     private int count = 0; /* count is used to see how many edges do we have (if it makes sense to consider a graph analyze)*/
     private int noNodes;
     private int[][] weights;
 
-    public GraphMatrix(int alpha, int tally, int noNodes){
+    public GraphMatrix(int alpha, int tally, int noNodes, int minimumSparseCoef){
         this.alpha = alpha;
         this.tally = tally;
-        this.minimumSparseCoef = tally / 5;
+        this.minimumSparseCoef = minimumSparseCoef;
         this.noNodes = noNodes;
         this.weights = new int[noNodes][noNodes];
 
@@ -128,7 +128,7 @@ public class GraphMatrix {
        ww0f
        www0*/
 
-    public void update(int observed_id,int observer_id){
+    public void update(int observed_id,int observer_id,boolean sparse){
 
         /*error defies our graph logic*/
         if (observed_id==observer_id)
@@ -142,20 +142,28 @@ public class GraphMatrix {
             if (weights[j][i]==MODIFIED)/*TO DO CAP AT MAXIMUM!!!*/
                 return;/*already modified at this timestamp*/
 
-            if (weights[i][j]==NULL_WEIGHT)
+            if ((weights[i][j]==NULL_WEIGHT)&&(sparse)) {
                 weights[i][j] = minimumSparseCoef;
-            else
-                weights[i][j]=(weights[i][j]*alpha+tally)/(alpha+1);
+            }
+            else {
+                weights[i][j] = (weights[i][j] * alpha + tally) / (alpha + 1);
+                if ((minimumSparseCoef > weights[i][j])&&(sparse))
+                    weights[i][j] = minimumSparseCoef;
+            }
             weights[j][i]=MODIFIED;
         }
         else {
             if (weights[i][j]==MODIFIED)
                 return;/*already modified for this step*/
 
-            if (weights[j][i]==NULL_WEIGHT)
+            if ((weights[j][i]==NULL_WEIGHT)&&(sparse)) {
                 weights[j][i] = minimumSparseCoef;
-            else
+            }
+            else {
                 weights[j][i] = (weights[j][i] * alpha + tally) / (alpha + 1);
+                if ((minimumSparseCoef > weights[j][i])&&(sparse))
+                    weights[j][i] = minimumSparseCoef;
+            }
             weights[i][j]=MODIFIED;
         }
     }
@@ -173,8 +181,9 @@ public class GraphMatrix {
                     count++;
 
                     if (sparse){
-                        if ( weights[j][i] > minimumSparseCoef )
-                            weights[j][i]=(weights[j][i]*alpha)/(alpha+1);
+                        if ( weights[j][i] > (minimumSparseCoef/2) ) {
+                            weights[j][i] = (weights[j][i] * alpha) / (alpha + 1);
+                        }
                     }
                     else { /* graph is dense */
                         weights[j][i] = (weights[j][i] * alpha) / (alpha + 1);
@@ -235,6 +244,205 @@ public class GraphMatrix {
 
         return borderNodes;
 
+    }
+
+    public static boolean getSparse(String traceName) {
+        switch (traceName) {
+            case "UPB 2011":
+                return true;
+            case "UPB 2012":
+                return false;
+            case "Haggle Intel":
+                return true;
+            case "Haggle Cambridge":
+                return true;
+            case "Haggle Infocom":
+                return true;
+            case "Haggle Infocom 2006":
+                return true;
+            case "Haggle Content":
+                return true;
+//            case "GeoLife":
+//                return true;
+            case "NCCU":
+                return true;
+//            case "NUS":
+//                return true;
+            case "Sigcomm":
+                return true;
+            case "SocialBlueConn":
+                return false;
+            case "St. Andrews":
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    public static boolean getVerySparse(String traceName) {
+        switch (traceName) {
+            case "UPB 2011":
+                return true;
+            case "UPB 2012":
+                return false;
+            case "Haggle Intel":
+                return false;
+            case "Haggle Cambridge":
+                return false;
+            case "Haggle Infocom":
+                return false;
+            case "Haggle Infocom 2006":
+                return false;
+            case "Haggle Content":
+                return false;
+//                return true;
+//            case "GeoLife":
+//                return true;
+            case "NCCU":
+                return true;
+//            case "NUS":
+//                return true;
+            case "Sigcomm":
+                return true;
+            case "SocialBlueConn":
+                return false;
+            case "St. Andrews":
+                return false;
+            default:
+                return false;
+        }
+    }
+
+    public static int getAlpha(String traceName) {
+        switch (traceName) {
+            case "UPB 2011":
+                return 130;
+            case "UPB 2012":
+                return 75;
+            case "Haggle Intel":
+                return 10;
+            case "Haggle Cambridge":
+                return 12;
+            case "Haggle Infocom":
+                return 150;
+            case "Haggle Infocom 2006":
+                return 65;
+            case "Haggle Content":
+                return 80;
+//            case "GeoLife":
+//                return 0;
+            case "NCCU":
+                return 10;
+//            case "NUS":
+//                return 110;
+            case "Sigcomm":
+                return 28;
+            case "SocialBlueConn":
+                return 30;
+            case "St. Andrews":
+                return 100;
+            default:
+                return 15;
+        }
+    }
+
+    public static int getTally(String traceName) {
+        switch (traceName) {
+//            case "UPB 2011":
+//                return 101;
+//            case "UPB 2012":
+//                return 102;
+//            case "Haggle Intel":
+//                return 103;
+//            case "Haggle Cambridge":
+//                return 104;
+//            case "Haggle Infocom":
+//                return 105;
+//            case "Haggle Infocom 2006":
+//                return 106;
+//            case "Haggle Content":
+//                return 107;
+//            case "GeoLife":
+//                return 108;
+//            case "NCCU":
+//                return 109;
+//            case "NUS":
+//                return 110;
+////            case "Sigcomm":
+////                return 111;
+//            case "SocialBlueConn":
+//                return 112;
+//            case "St. Andrews":
+//                return 113;
+            default:
+                return 1000;
+        }
+    }
+
+    public static int getMinimumSparseCoef(String traceName) {
+        switch (traceName) {
+            case "UPB 2011":
+                return 100;
+            case "UPB 2012":
+                return 100;
+            case "Haggle Intel":
+                return 200;
+            case "Haggle Cambridge":
+                return 50;
+            case "Haggle Infocom":
+                return 150;
+            case "Haggle Infocom 2006":
+                return 200;
+            case "Haggle Content":
+                return 200;
+//            case "GeoLife":
+//                return 108;
+            case "NCCU":
+                return 200;
+//            case "NUS":
+//                return 110;
+            case "Sigcomm":
+                return 100;
+            case "SocialBlueConn":
+                return 100;
+            case "St. Andrews":
+                return 100;
+            default:
+                return 50;
+        }
+    }
+//
+    public static int getTreshold(String traceName) {
+        switch (traceName) {
+            case "UPB 2011":
+                return 7;
+            case "UPB 2012":
+                return 7;
+            case "Haggle Intel":
+                return 20;
+            case "Haggle Cambridge":
+                return 17;
+            case "Haggle Infocom":
+                return 11;
+            case "Haggle Infocom 2006":
+                return 9;
+            case "Haggle Content":
+                return 9;
+//            case "GeoLife":
+//                return 108;
+            case "NCCU":
+                return 15;
+//            case "NUS":
+//                return 110;
+            case "Sigcomm":
+                return 7;
+            case "SocialBlueConn":
+                return 23;
+            case "St. Andrews":
+                return 7;
+            default:
+                return 50;
+        }
     }
 }
 

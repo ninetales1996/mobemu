@@ -7,6 +7,7 @@ import org.gephi.project.api.Workspace;
 import org.gephi.statistics.plugin.Modularity;
 import org.openide.util.Lookup;
 
+import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -20,7 +21,19 @@ public class GraphCommunityList extends GraphData {
     public static final int COMMUNITIES_INCREASE = 1;
     public static final int COMMUNITIES_DECREASE = 2;
 
+    public static int no_ev_env_increase = 0;
+    public static int no_ev_env_decrease = 0;
+    public static int no_ev_env_total = 0;
+    public static int no_ev_comm_increase = 0;
+    public static int no_ev_comm_decrease = 0;
+    public static int no_ev_comm_total = 0;
+
+    public static int MAX_COMMUNITIES = 15;
+
+    private String traceName;
     private GraphCommunityList History;
+
+    public boolean init=true;
 
     private int CommunityLabel;
 
@@ -30,10 +43,13 @@ public class GraphCommunityList extends GraphData {
     public double total_isolated=0;
     public double time_counter=0;
 
+    public double total_clustering=0;
+    public double no_clustering=0;
+
     public void print_state(){
         double comm = total_communities/time_counter;
         double isol = total_isolated/time_counter;
-        System.out.println("times elapsed " + time_counter + " total comm " + total_communities + " average communities " + comm + " total iso " + total_isolated + " average isolated " + isol  );
+        System.out.println("times elapsed " + time_counter + " total comm " + total_communities + " total iso " + total_isolated + " average communities " + comm + " average isolated " + isol  );
     }
 
     public int getCommunityLabel() {
@@ -47,11 +63,12 @@ public class GraphCommunityList extends GraphData {
 
 
     HashMap<Integer,GraphCommunity> communityList;
-//    node-map per integer;
+    //    node-map per integer;
     HashMap<Integer,List<Integer>> nodeCommunityMap;
 
-    public GraphCommunityList() {
+    public GraphCommunityList(String traceName) {
 //        History = new GraphCommunityList();
+        this.traceName=traceName;
         communityList=new HashMap<>();
         nodeCommunityMap=new HashMap<>();
     }
@@ -116,9 +133,9 @@ public class GraphCommunityList extends GraphData {
 //
 //            System.out.print(" key " + key + " has " + nodeSet.size() + " elements ");
 //            System.out.println("-------------------------------------------------------");
-////            for (Integer node_no: nodeSet){
-////                System.out.println(" node  " + node_no);
-////            }
+//            for (Integer node_no: nodeSet){
+//                System.out.println(" node  " + node_no);
+//            }
 //        }
 
 
@@ -131,6 +148,7 @@ public class GraphCommunityList extends GraphData {
         wholeGraphView.populateData(graphMatrix);
         communityList.put(BIG_GRAPH_ENTRY,wholeGraphView);
 
+        count_isolated =0;
         int community_key =1;
         for (Integer key : nodeCommunityMap.keySet()) {
 
@@ -147,10 +165,15 @@ public class GraphCommunityList extends GraphData {
 //                System.out.println("community " + key + " has border " + key_border + " with weight "+ weight);
 //            }
 
+
                 GraphCommunity graphView= new GraphCommunity();
                 graphView.populateData(communityGraphMatrix);
                 graphView.populateData(borderNodes);
 
+                if (graphView.getAverageClusteringCoefficient()>0) {
+                    total_clustering = total_clustering + graphView.getAverageClusteringCoefficient();
+                    no_clustering = no_clustering + 1;
+                }
 //                System.out.println("community " + key + " has border size " + graphView.getBorderSize() + " with border weight " + graphView.getBorderTotalWeight());
 
                 communityList.put(community_key,graphView);
@@ -158,24 +181,28 @@ public class GraphCommunityList extends GraphData {
             }
             else {
 //                GraphCommunity graphView= new GraphCommunity();
+//                System.out.println("ISOLATED NODE");
                 count_isolated++;
 //              System.out.println("dummy group " + key + " for node "  + nodeList.get(0) );
 //                communityList.put(key,graphView);
             }
         }
 
+//        System.out.println("count iso " + count_isolated);
+
         total_communities = total_communities + community_key - 1;
         total_isolated = total_isolated + count_isolated;
+//        System.out.println("total iso " + total_isolated);
         //for entries
-            //obtain graph map from node map
-            //obtain links-map from node map
-            //new community
-            //add link-map to community
-            //new workspace
-            //process graph matrix -> graph model
-            //communityList.populateData(graphMatrix_i)
-            //add node to community-map
-            //close workspace
+        //obtain graph map from node map
+        //obtain links-map from node map
+        //new community
+        //add link-map to community
+        //new workspace
+        //process graph matrix -> graph model
+        //communityList.populateData(graphMatrix_i)
+        //add node to community-map
+        //close workspace
 
     }
 
@@ -192,10 +219,13 @@ public class GraphCommunityList extends GraphData {
 
 //        System.out.println( "community list size " + communityList.size() + " vs " + History.communityList.size());
 
+        no_ev_env_total++;
         if (communityList.size() > History.communityList.size()){
+            no_ev_env_increase++;
             setCommunityLabel(COMMUNITIES_INCREASE);
         }
         else if (History.communityList.size() > communityList.size()){
+            no_ev_env_decrease++;
             setCommunityLabel(COMMUNITIES_DECREASE);
         }
 
@@ -208,22 +238,31 @@ public class GraphCommunityList extends GraphData {
 //        System.out.println(" number of communities evolution " + getCommunityLabel());
         if (getCommunityLabel()==COMMUNITIES_EQUAL) {
             for (Integer key : communityList.keySet()){
+                no_ev_comm_total++;
                 GraphCommunity graphCommunity = communityList.get(key);
 //                System.out.println( " key " + key + "  tick " + tick  + graphCommunity.toString());
 //                System.out.println(  " key "  + key + "history at "  + tick + " is  " + History.communityList.get(key).toString());
                 if (graphCommunity.getSize()>0) {
                     if (graphCommunity.getSize() > History.communityList.get(key).getSize()) {
-                        graphCommunity.setLabel(true);
+                        no_ev_comm_increase++;
+                        graphCommunity.setLabelIncrease();
                         communityList.replace(key, graphCommunity);
 //                        System.out.println("label set at key " + key);
                     }
+                    else if (History.communityList.get(key).getSize()>graphCommunity.getSize()){
+                        graphCommunity.setLabelDecrease();
+                        no_ev_comm_decrease++;
+                        communityList.replace(key, graphCommunity);
+                    }
                 }
+
 //                if (graphCommunity.getSize()) {
 //                    System.out.println( " key " + key + "  tick " + tick  + graphCommunity.toString());
 //                }
 //                else
 //                    System.out.println( " key " + key + "  tick " + tick + " DUMMY NODE");
             }
+            no_ev_comm_total--;
         }
     }
 
@@ -247,39 +286,78 @@ public class GraphCommunityList extends GraphData {
 
     @Override
     void feedToMLEngine(long tick) {
-        FileWriter writer;
+        BufferedWriter writer;
+        Integer temp=0;
 
-//        System.out.println(" tick is " + tick);
+        System.out.println(" tick is " + tick);
+//        try {
+//            writer = new BufferedWriter(new FileWriter("Community_file_" + traceName + ".txt", true));
+//
+//            writer.write("tick is "+ tick );
+//            if (getCommunityLabel()==COMMUNITIES_EQUAL) {
+//                writer.write(" number of communities equal to " + (communityList.size()-1));
+//                writer.write(" number of isolated nodes " + count_isolated);
+//            }
+//            else if (getCommunityLabel()==COMMUNITIES_INCREASE){
+//                writer.write(" number of communities increased to " + (communityList.size()-1));
+//                writer.write(" number of isolated nodes " + count_isolated);
+//            }
+//            else if (getCommunityLabel()==COMMUNITIES_DECREASE){
+//                writer.write(" number of communities decrease to " + (communityList.size()-1));
+//                writer.write(" number of isolated nodes " + count_isolated);
+//            }
+//
+//            for (Integer key : communityList.keySet()) {
+//                GraphCommunity graphCommunity = communityList.get(key);
+//
+//                if (graphCommunity.getSize() > 0) {
+//                    writer.write("\n");
+//                    writer.write(" community NUMBER " + key);
+//                    writer.write(graphCommunity.toString());
+//                }
+//
+//            }
+//            writer.write(" total number of env events is "+ no_ev_env_total + " increase ev in no groups " + no_ev_env_increase + " decrease ev in no groups " + no_ev_env_decrease);
+//            writer.write(" total number of community events is " + no_ev_comm_total + " community increase " + no_ev_comm_increase + " community decrease " +no_ev_comm_decrease);
+//            writer.write(" end tick " + tick  + "\n" + "----------------" + "\n" );
+//            writer.close();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+
         try {
-            writer = new FileWriter("Community_file.txt", true);
+            writer = new BufferedWriter(new FileWriter("Community_file_all" + ".csv", true));
 
-
-            if (getCommunityLabel()==COMMUNITIES_EQUAL) {
-
-                writer.write("tick is " + tick + " number of communities equal to " + communityList.size());
-                writer.write("tick is " + tick + " number of isolated nodes " + count_isolated + "\n" );
-            }
-            else if (getCommunityLabel()==COMMUNITIES_INCREASE){
-                writer.write("tick is " + tick + " number of communities increase to " + communityList.size());
-                writer.write("tick is " + tick + " number of isolated nodes " + count_isolated + "\n" );
-            }
-
-            else if (getCommunityLabel()==COMMUNITIES_DECREASE){
-                writer.write("tick is " + tick + " number of communities decrease to " + communityList.size());
-                writer.write("tick is " + tick + " number of isolated nodes " + count_isolated + "\n" );
+            if (init) {
+                for (int i = 0; i < MAX_COMMUNITIES; i++) {
+                    writer.write(GraphCommunity.columnStrings(i));
+                }
+                writer.write(";world_label");
+                writer.write("\n");
+                init=false;
             }
 
             for (Integer key : communityList.keySet()) {
                 GraphCommunity graphCommunity = communityList.get(key);
 
-                if (graphCommunity.getSize() > 0)
-                    writer.write("tick is " + tick + " community NUMBER " + key + " " + graphCommunity.toString());
+                if (graphCommunity.getSize() > 0) {
+                    writer.write(graphCommunity.toMLString());
+                    temp++;
+                }
             }
-            writer.write("\n" );
+            for ( ; temp<MAX_COMMUNITIES;temp++){
+                writer.write(GraphCommunity.toMLPadding());
+            }
+            writer.write(";"+getCommunityLabel());
+            writer.write("\n");
             writer.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
 
+    public void printEvents(){
+        System.out.println(" total number of env events is "+ no_ev_env_total + " increase ev in no groups " + no_ev_env_increase + " decrease ev in no groups " + no_ev_env_decrease);
+        System.out.println(" total number of community events is " + no_ev_comm_total + " community increase " + no_ev_comm_increase + " community decrease " +no_ev_comm_decrease);
     }
 }

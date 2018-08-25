@@ -75,6 +75,32 @@ public class GraphNode {
                 ", PageRank=" + df.format(PageRank)
                 + "\n";
     }
+
+    public static String toMLPadding() {
+        DecimalFormat df = new DecimalFormat("#.###");
+        return false + ";" + df.format(0) + ";" +df.format(0) + ";" +
+                df.format(0) + ";" + df.format(0)+ ";" +
+                df.format(0) + ";" + df.format(0) + ";" +
+                df.format(0) + ";" + df.format(0) + ";" + df.format(0) +
+                ";" + df.format(0);
+    }
+
+    public String toMLString() {
+        DecimalFormat df = new DecimalFormat("#.###");
+        return false + ";" + df.format(ClusteringCoefficient) + ";" +df.format(Degree) + ";" +
+                df.format(EignvectorCentrality) + ";" + df.format(BetweenessCentrality)+ ";" +
+                df.format(ClosenessCentrality) + ";" + df.format(HarmonicCloseness) + ";" +
+                df.format(Eccentricity) + ";" + df.format(Authority) + ";" + df.format(Hub) +
+                ";" + df.format(PageRank);
+
+    }
+
+    public static String columnStrings(Integer key) {
+        return "Label"+key.toString()+";ClusteringCoefficient"+key.toString()+";Degree"+key.toString()+";EignvectorCentrality"+key.toString()+
+                ";BetweenessCentrality"+key.toString() + ";ClosenessCentraliy"+key.toString()+";HarmonicCloseness"+key.toString()
+                +";Eccentricity"+key.toString()+";Authority"+key.toString()+";Hub"+key.toString()+";PageRank"+key.toString();
+    }
+
     public double getClusteringCoefficient() {
         return ClusteringCoefficient;
     }
