@@ -44,18 +44,23 @@ public class GraphCommunity implements GraphPopulateData {
     @Override
     public String toString() {
         DecimalFormat df = new DecimalFormat("#.###");
+        double scaledSize = size/100;
+        double scaledBorderWeight = borderWeight/10000;
+        double scaledPathLength = pathLength/10;
+        double scaledWeightedDegree = averageWeightedDegree/1000;
+        double scaledBorderSize = borderSize/100;
 
         return  " Label= " + labelToString(Label) +
-                ", size= " + size +
+                ", size= " + scaledSize +
                 ", clusteringCoef= " + df.format(averageClusteringCoefficient) +
-                ", pathLength= " + df.format(pathLength) +
+                ", pathLength= " + df.format(scaledPathLength) +
                 ", diameter= " + df.format(diameter) +
                 ", compCount= " + connectedComponentsCount +
                 ", density= " + df.format(density) +
                 ", directed= " + df.format(directed) +
-                ", degree= " + df.format(averageWeightedDegree) +
-                ", borderS= " + df.format(borderSize) +
-                ", borderW= " + df.format(borderWeight)
+                ", degree= " + df.format(scaledWeightedDegree) +
+                ", borderS= " + df.format(scaledBorderSize) +
+                ", borderW= " + df.format(scaledBorderWeight)
                 + "\n";
     }
 
