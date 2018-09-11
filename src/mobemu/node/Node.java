@@ -4,9 +4,9 @@
  */
 package mobemu.node;
 
+import mobemu.algorithms.OTR;
 import mobemu.analytics.GraphCommunityList;
 import mobemu.analytics.GraphMatrix;
-import mobemu.analytics.GraphNodeList;
 import mobemu.communitydetection.KClique;
 import mobemu.trace.Contact;
 import mobemu.trace.Trace;
@@ -256,7 +256,7 @@ public abstract class Node {
      * @return void
      */
 
-    public static void runAnalytics(int nodesLength, Trace trace){
+    public static void runAnalytics(OTR[] nodes, int nodesLength, Trace trace){
 
         int contactCount = trace.getContactsCount();
         long startTime = trace.getStartTime();
@@ -267,6 +267,7 @@ public abstract class Node {
         int processNumberCounts = 0;
         boolean print = false;
         int modulo= 1000000;
+        boolean init=false;
 
         int count_time_elapsed = 0 ;
         double total_edges = 0;
@@ -276,7 +277,7 @@ public abstract class Node {
         System.out.println("treshold for " + trace.getName() + " is " + treshold);
 
 //        GraphData communityGraphData = new GraphCommunityList();
-        GraphNodeList nodeGraphData = new GraphNodeList(trace.getName());
+//        GraphNodeList nodeGraphData = new GraphNodeList(trace.getName());
 
         GraphCommunityList communityGraphData = new GraphCommunityList(trace.getName());
 
@@ -293,6 +294,7 @@ public abstract class Node {
 
         System.out.println("start time is " + startTime + " end time is " + endTime);
 /*1106722177000L*/
+
         for (long tick = startTime; tick < endTime; tick += sampleTime) {
             int countContacts = 0;
             long time_remaining = endTime - tick;
@@ -315,6 +317,12 @@ public abstract class Node {
 
                     int observed_id = contact.getObserver();
                     int observer_id = contact.getObserved();
+                    if (!init){
+                        System.out.println("not initialized!!!");
+                    }
+
+                    if (init)
+                        nodes[observer_id].exchangeMessages(nodes[observed_id]);
 
                     graphMatrix.update(observed_id,observer_id,sparse);
                 }
@@ -353,12 +361,23 @@ public abstract class Node {
                 total_edges = total_edges + graphMatrix.getAgedEdgeCount();
                 /*timer*/
 
-                nodeGraphData.process(graphMatrix,tick);
+
+                if ((communityGraphData.getCommunityLabel()!=GraphCommunityList.COMMUNITIES_EQUAL)||!(init)){
+                    for (int i = 0; i < nodes.length; i++) {
+                        nodes[i].OTR_new_session(communityGraphData.getCommunityId(i),communityGraphData.getCommunitySize(i),communityGraphData.isNodeIsolated(i));
+                        init=true;
+                    }
+                }
+
+                communityGraphData.clearHistory();
+
+
+
+
+//                nodeGraphData.process(graphMatrix,tick);
                 communityGraphData.process(graphMatrix, tick);
 //
 //                timer.cancel();
-
-
 //                if (timer) {
                 //  System.out.println("fail tick " +tick);
 //                    nodeGraphData.restore();
@@ -370,10 +389,18 @@ public abstract class Node {
                 System.out.println("processed !!! time is " + communityGraphData.time_counter + " time remaining " + time_remaining + " at tick " + tick);
 //                }
             }
+            for (int i = 0; i < nodes.length; i++) {
+                nodes[i].update_stats();
+            }
         }
 
         double average_no_edges = total_edges/processNumberCounts;
         double avg_clustering = communityGraphData.total_clustering/communityGraphData.no_clustering;
+
+//        double avgBorderWeightEqual = communityGraphData.borderWeightEqual/communityGraphData.no_ev_env_equal;
+//        double avgBorderWeightIncrease = communityGraphData.borderWeightIncrease/communityGraphData.no_ev_env_increase;
+//        double avgBorderWeightDecrease = communityGraphData.borderWeightDecrease/communityGraphData.no_ev_env_decrease;
+
 
         System.out.println("process treshold is " + treshold + " fast init is " + sparse + " no age " + very_sparse + " with min " + graphMatrix.minimumSparseCoef +
                 " tally is " + tally + " alpha is " + alpha);
@@ -383,7 +410,7 @@ public abstract class Node {
         communityGraphData.print_state();
 
         communityGraphData.printEvents();;
-        nodeGraphData.printEvents();
+//        nodeGraphData.printEvents();
 
 
         System.out.println();

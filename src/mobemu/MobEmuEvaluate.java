@@ -22,6 +22,14 @@ public class MobEmuEvaluate {
         pc.newProject();
         Workspace workspace = pc.getCurrentWorkspace();
 
+        int w = 0;
+        int k=1000;
+        int alpha =4;
+        for ( int i=0;i<10000000;i++){
+            w=(w*alpha + k) / (alpha+1);
+        }
+        System.out.println(" convergence  " + w);
+
 //    node-map per integer;
         HashMap<Integer,List<Integer>> nodeCommunityMap;
 

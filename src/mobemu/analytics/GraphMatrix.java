@@ -320,7 +320,7 @@ public class GraphMatrix {
             case "UPB 2012":
                 return 75;
             case "Haggle Intel":
-                return 10;
+                return 15;
             case "Haggle Cambridge":
                 return 12;
             case "Haggle Infocom":

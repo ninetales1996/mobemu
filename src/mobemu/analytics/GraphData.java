@@ -25,8 +25,8 @@ public abstract class GraphData implements GraphPopulateData {
         this.populateData(graphMatrix);
         this.updateLabel(tick);
         this.updateHistory();
-        this.feedToMLEngine(tick);
-        this.clearHistory();
+//        this.feedToMLEngine(tick);
+//        this.clearHistory();
     }
 
     public void restore(){

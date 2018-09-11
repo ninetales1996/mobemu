@@ -44,23 +44,18 @@ public class GraphCommunity implements GraphPopulateData {
     @Override
     public String toString() {
         DecimalFormat df = new DecimalFormat("#.###");
-        double scaledSize = size/100;
-        double scaledBorderWeight = borderWeight/10000;
-        double scaledPathLength = pathLength/10;
-        double scaledWeightedDegree = averageWeightedDegree/1000;
-        double scaledBorderSize = borderSize/100;
 
         return  " Label= " + labelToString(Label) +
-                ", size= " + scaledSize +
+                ", size= " + size +
                 ", clusteringCoef= " + df.format(averageClusteringCoefficient) +
-                ", pathLength= " + df.format(scaledPathLength) +
+                ", pathLength= " + df.format(pathLength) +
                 ", diameter= " + df.format(diameter) +
                 ", compCount= " + connectedComponentsCount +
                 ", density= " + df.format(density) +
                 ", directed= " + df.format(directed) +
-                ", degree= " + df.format(scaledWeightedDegree) +
-                ", borderS= " + df.format(scaledBorderSize) +
-                ", borderW= " + df.format(scaledBorderWeight)
+                ", degree= " + df.format(averageWeightedDegree) +
+                ", borderS= " + df.format(borderSize) +
+                ", borderW= " + df.format(borderWeight)
                 + "\n";
     }
 
@@ -75,18 +70,26 @@ public class GraphCommunity implements GraphPopulateData {
 
     public String toMLString() {
         DecimalFormat df = new DecimalFormat("#.###");
-        return false + ";" + size + ";" +df.format(averageClusteringCoefficient) + ";" +
-                df.format(pathLength) + ";" + df.format(diameter)+ ";" +
-                connectedComponentsCount + ";" + df.format(density) + ";" +
-                directed + ";" + df.format(averageWeightedDegree) + ";" + df.format(borderSize) +
-                ";" + df.format(borderWeight);
+        double scaledSize = size/100;
+        double scaledDiameter = diameter/100;
+        double scaledConnected = connectedComponentsCount/100;
+        double scaledBorderWeight = borderWeight/10000;
+        double scaledPathLength = pathLength/10;
+        double scaledWeightedDegree = averageWeightedDegree/1000;
+        double scaledBorderSize = borderSize/100;
+
+        return false + ";" + scaledSize + ";" +df.format(averageClusteringCoefficient) + ";" +
+                df.format(scaledPathLength) + ";" + df.format(scaledDiameter)+ ";" +
+                df.format(scaledConnected) + ";" + df.format(density) + ";" +
+                df.format(scaledWeightedDegree) + ";" + df.format(scaledBorderSize) +
+                ";" + df.format(scaledBorderWeight);
 
     }
 
     public static String columnStrings(Integer key) {
         return "Label"+key.toString()+";size"+key.toString()+";clusteringCoef"+key.toString()+";pathLength"+key.toString()+
                 ";diameter"+key.toString() + ";compCount"+key.toString()+";density"+key.toString()
-                +";directed"+key.toString()+";degree"+key.toString()+";borderS"+key.toString()+";borderW"+key.toString();
+                +";degree"+key.toString()+";borderS"+key.toString()+";borderW"+key.toString();
     }
 
     public int isLabel() {

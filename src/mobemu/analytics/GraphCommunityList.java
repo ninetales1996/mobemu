@@ -23,6 +23,7 @@ public class GraphCommunityList extends GraphData {
 
     public static int no_ev_env_increase = 0;
     public static int no_ev_env_decrease = 0;
+    public static int no_ev_env_equal = 0;
     public static int no_ev_env_total = 0;
     public static int no_ev_comm_increase = 0;
     public static int no_ev_comm_decrease = 0;
@@ -30,8 +31,13 @@ public class GraphCommunityList extends GraphData {
 
     public static int MAX_COMMUNITIES = 15;
 
+    public static double borderWeightEqual=0 ;
+    public static double borderWeightIncrease=0 ;
+    public static double borderWeightDecrease=0 ;
+
     private String traceName;
     private GraphCommunityList History;
+    private long historyWeight = 0;
 
     public boolean init=true;
 
@@ -209,24 +215,47 @@ public class GraphCommunityList extends GraphData {
     @Override
     void updateLabel(long tick) {
 
+        long tempCommWeight=0;
+        long tempTotalWeight=0;
+        boolean flag=false;
+
         if (History == null) {
             System.out.println("History NUll in update Label");
             return;
         }
 
+        if (!(History.communityList.size()>1)){
+            setCommunityLabel(COMMUNITIES_EQUAL);
+            return;
+        }
 
         setCommunityLabel(COMMUNITIES_EQUAL);
 
 //        System.out.println( "community list size " + communityList.size() + " vs " + History.communityList.size());
+        for (Integer key : History.communityList.keySet()) {
+               GraphCommunity graphCommunity = History.communityList.get(key);
+               if ((key != BIG_GRAPH_ENTRY) && (graphCommunity.borderSize!=0)) {
+                   tempCommWeight = tempCommWeight + graphCommunity.borderWeight;
+                   tempCommWeight = tempCommWeight / graphCommunity.borderSize;
+               }
+               tempTotalWeight = tempCommWeight / (History.communityList.size());
+        }
 
         no_ev_env_total++;
         if (communityList.size() > History.communityList.size()){
             no_ev_env_increase++;
+            borderWeightIncrease = borderWeightIncrease + tempTotalWeight;
             setCommunityLabel(COMMUNITIES_INCREASE);
         }
         else if (History.communityList.size() > communityList.size()){
             no_ev_env_decrease++;
+            borderWeightDecrease = borderWeightDecrease + tempTotalWeight;
             setCommunityLabel(COMMUNITIES_DECREASE);
+        }
+
+        if (getCommunityLabel()==COMMUNITIES_EQUAL){
+            borderWeightEqual = borderWeightEqual + tempTotalWeight;
+            no_ev_env_equal++;
         }
 
 //        System.out.println("community label at tick " + tick + " is " + getCommunityLabel());
@@ -270,6 +299,8 @@ public class GraphCommunityList extends GraphData {
     void updateHistory() {
         this.History = null;
         this.History = new GraphCommunityList(communityList,count_isolated);
+
+
     }
 
     public GraphCommunityList(HashMap<Integer,GraphCommunity> communityList,int count_isolated) {
@@ -278,7 +309,7 @@ public class GraphCommunityList extends GraphData {
     }
 
     @Override
-    void clearHistory() {
+    public void clearHistory() {
         count_isolated=0;
         communityList.clear();
         nodeCommunityMap.clear();
@@ -342,11 +373,13 @@ public class GraphCommunityList extends GraphData {
 
                 if (graphCommunity.getSize() > 0) {
                     writer.write(graphCommunity.toMLString());
+                    writer.write(";");
                     temp++;
                 }
             }
             for ( ; temp<MAX_COMMUNITIES;temp++){
                 writer.write(GraphCommunity.toMLPadding());
+                writer.write(";");
             }
             writer.write(";"+getCommunityLabel());
             writer.write("\n");
@@ -359,5 +392,54 @@ public class GraphCommunityList extends GraphData {
     public void printEvents(){
         System.out.println(" total number of env events is "+ no_ev_env_total + " increase ev in no groups " + no_ev_env_increase + " decrease ev in no groups " + no_ev_env_decrease);
         System.out.println(" total number of community events is " + no_ev_comm_total + " community increase " + no_ev_comm_increase + " community decrease " +no_ev_comm_decrease);
+
+        double avgEqual = borderWeightEqual/no_ev_env_equal;
+        double avgIncrease = borderWeightIncrease/no_ev_env_increase;
+        double avgDecrease = borderWeightDecrease/no_ev_env_decrease;
+
+        System.out.println(" average equal " + avgEqual);
+        System.out.println(" average increase " + avgIncrease);
+        System.out.println(" average decrease " + avgDecrease);
+    }
+
+    public int getCommunityId(int i) {
+        for (Integer key : nodeCommunityMap.keySet()) {
+            List<Integer> nodeList = nodeCommunityMap.get(key);
+            if (nodeList.contains(i))
+                    return key;
+        }
+        return -1;
+    }
+
+    public boolean isNodeIsolated(int i) {
+        for (Integer key : nodeCommunityMap.keySet()) {
+            List<Integer> nodeList = nodeCommunityMap.get(key);
+            if ((nodeList.contains(i)) && ((nodeList.size()==1)||(nodeList.size()==0)))
+                return true;
+        }
+        return false;
+    }
+
+    public int getCommunitySize(int i) {
+        for (Integer key : nodeCommunityMap.keySet()) {
+            List<Integer> nodeList = nodeCommunityMap.get(key);
+            if (nodeList.contains(i))
+                return nodeList.size();
+        }
+
+        return 1;
+    }
+
+    public boolean eventPredicted(){
+        double tempWeight = 0;
+        double tempSize = 0;
+        for (Integer key : communityList.keySet()) {
+
+            GraphCommunity comm = communityList.get(key);
+            tempWeight = tempWeight+comm.borderWeight;
+        }
+        if (tempWeight>600)
+            return true;
+        return false;
     }
 }
