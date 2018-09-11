@@ -305,7 +305,9 @@ public abstract class Node {
 //            graphMatrix.printGraphMatrix();
             if ((time_remaining%modulo)==0) {
                 System.out.println(" time passing " + time_remaining );
-
+                if (!init){
+                    System.out.println("not initialized!!!");
+                }
             }
 
             for (int i = 0; i < contactCount; i++) {
@@ -317,9 +319,6 @@ public abstract class Node {
 
                     int observed_id = contact.getObserver();
                     int observer_id = contact.getObserved();
-                    if (!init){
-                        System.out.println("not initialized!!!");
-                    }
 
                     if (init)
                         nodes[observer_id].exchangeMessages(nodes[observed_id]);
@@ -362,6 +361,11 @@ public abstract class Node {
                 /*timer*/
 
 
+
+//                nodeGraphData.process(graphMatrix,tick);
+                communityGraphData.process(graphMatrix, tick);
+
+
                 if ((communityGraphData.getCommunityLabel()!=GraphCommunityList.COMMUNITIES_EQUAL)||!(init)){
                     for (int i = 0; i < nodes.length; i++) {
                         nodes[i].OTR_new_session(communityGraphData.getCommunityId(i),communityGraphData.getCommunitySize(i),communityGraphData.isNodeIsolated(i));
@@ -370,12 +374,6 @@ public abstract class Node {
                 }
 
                 communityGraphData.clearHistory();
-
-
-
-
-//                nodeGraphData.process(graphMatrix,tick);
-                communityGraphData.process(graphMatrix, tick);
 //
 //                timer.cancel();
 //                if (timer) {
@@ -388,10 +386,13 @@ public abstract class Node {
 //                    communityGraphData.process(graphMatrix, tick);
                 System.out.println("processed !!! time is " + communityGraphData.time_counter + " time remaining " + time_remaining + " at tick " + tick);
 //                }
+
+                for (int i = 0; i < nodes.length; i++) {
+                    nodes[i].update_stats();
+                }
             }
-            for (int i = 0; i < nodes.length; i++) {
-                nodes[i].update_stats();
-            }
+
+
         }
 
         double average_no_edges = total_edges/processNumberCounts;

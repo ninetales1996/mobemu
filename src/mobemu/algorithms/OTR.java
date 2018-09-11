@@ -58,23 +58,26 @@ public class OTR {
     }
 
     public boolean roundFinished(){
-        if (this.messages.size()>((group_count*2)/3))
+        if (this.messages.size()>((group_count*2)/3)) {
+//            System.out.println("message size for node " + nodeId + " is  " + this.messages.size() );
             return true;
+        }
         return false;
     }
 
     public void newRound(){
         int max = UNDECIDED;
         for (Integer i : messages.keySet()){
-            if (i>max)
-                max =i;
+            int val = messages.get(i);
+            if (val>max)
+                max =val;
         }
 
         this.decided=false;
         messages.clear();
         this.value=max;
         round = round + 1;
-        System.out.println("NEW ROUND " + round + " session " + session + " for " + nodeId + " in " + group_id + " with " + group_count + " nodes ");
+//        System.out.println("NEW ROUND " + round + " session " + session + " for " + nodeId + " in " + group_id + " with " + group_count + " nodes ");
         messages.put(nodeId,max);
     }
 
@@ -82,10 +85,11 @@ public class OTR {
     public int valueDecided() {
         int temp = UNDECIDED;
         for (Integer i : messages.keySet()){
+            int val = messages.get(i);
             if (temp==UNDECIDED){
-                temp =i;
+                temp =val;
             }
-            else if (temp!=i){
+            else if (temp!=val){
                 return UNDECIDED;
             }
         }
